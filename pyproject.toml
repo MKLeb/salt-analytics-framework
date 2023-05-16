@@ -175,3 +175,9 @@ ignore-names = [
 [tool.ruff.pyupgrade]
 # Preserve types, even if a file imports `from __future__ import annotations`.
 keep-runtime-typing = true
+
+[tool.ruff.mccabe]
+max-complexity = 20
+
+[tool.ruff.pylint]
+max-branches = 25
