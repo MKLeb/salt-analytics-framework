@@ -1,17 +1,14 @@
 # Copyright 2021-2023 VMware, Inc.
 # SPDX-License-Identifier: Apache-2.0
 """
-Run the salt-analytics-framework port of the MNIST network.
+Evaluate the output of a Jupyter notebook.
 """
 from __future__ import annotations
 
 import logging
-import pathlib
+from ast import literal_eval
 from typing import AsyncIterator
 from typing import Type
-
-import numpy as np
-from tensorflow import keras
 
 from saf.models import CollectedEvent
 from saf.models import PipelineRunContext
@@ -20,41 +17,31 @@ from saf.models import ProcessConfigBase
 log = logging.getLogger(__name__)
 
 
-class MNISTNetworkConfig(ProcessConfigBase):
+class NotebookOutputConfig(ProcessConfigBase):
     """
-    Configuration schema for the MNIST network processor plugin.
+    Configuration schema for the notebook output processor plugin.
     """
-
-    model: str
 
 
 def get_config_schema() -> Type[ProcessConfigBase]:
     """
-    Get the MNIST network processor plugin configuration schema.
+    Get the notebook output processor plugin configuration schema.
     """
-    return MNISTNetworkConfig
+    return NotebookOutputConfig
 
 
 async def process(
     *,
-    ctx: PipelineRunContext[MNISTNetworkConfig],
+    ctx: PipelineRunContext[NotebookOutputConfig],
     event: CollectedEvent,
 ) -> AsyncIterator[CollectedEvent]:
     """
-    Run the MNIST network.
+    Process the notebook output and perform some simple averaging.
     """
-    if "mnist_model" not in ctx.cache:
-        model_path = pathlib.Path(ctx.config.model)
-        log.debug("Loading the mnist model from %s", model_path)
-        ctx.cache["mnist_model"] = keras.models.load_model(model_path)
+    if "mnist_model_evaluations" not in ctx.cache:
         ctx.cache["mnist_model_evaluations"] = []
-    else:
-        log.debug("Did not load the model, already cached it")
 
-    model = ctx.cache["mnist_model"]
-    x = event.data["x"]
-    y = event.data["y"]
-    evaluate = model.evaluate(np.asarray([x]), np.asarray([y]))
+    evaluate = literal_eval(event.data["trimmed_outputs"][0]["data"]["text/plain"])
     log.debug("Evaluate result: %s", evaluate)
     ctx.cache["mnist_model_evaluations"].append(evaluate)
     avg_accuracy = sum([res[1] for res in ctx.cache["mnist_model_evaluations"]]) / len(

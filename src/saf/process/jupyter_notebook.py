@@ -6,8 +6,9 @@ Run a jupyter notebook using papermill.
 from __future__ import annotations
 
 import logging
-import pathlib
+import pathlib  # noqa: TCH003
 from typing import Any
+from typing import AsyncIterator
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -46,7 +47,7 @@ async def process(
     *,
     ctx: PipelineRunContext[JupyterNotebookConfig],
     event: CollectedEvent,
-) -> CollectedEvent:
+) -> AsyncIterator[CollectedEvent]:
     """
     Run the jupyter notebook, doing papermill parameterizing using the event data given.
     """
@@ -74,7 +75,6 @@ async def process(
     for out in notebook_output:
         if out.output_type == "execute_result":
             trimmed_outputs.append(out)
-    log.debug(f"Adding the following output: {trimmed_outputs}")
-    event.data["trimmed_outputs"] = trimmed_outputs
+    event.data = {"trimmed_outputs": trimmed_outputs}
 
-    return event
+    yield event
